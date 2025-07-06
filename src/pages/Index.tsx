@@ -103,8 +103,11 @@ const Index = () => {
     
     console.log('Mensagem codificada:', encodedMessage); // Para debug
     
-    // Define o número do WhatsApp da pizzaria
-    const whatsappNumber = '5585999999999';
+    // Extrai apenas os números do telefone do cliente para formar o número do WhatsApp
+    const customerPhoneNumbers = customer.phone.replace(/\D/g, '');
+    const whatsappNumber = `55${customerPhoneNumbers}`;
+    
+    console.log('Número do WhatsApp:', whatsappNumber); // Para debug
     
     // Abre WhatsApp
     const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
