@@ -76,29 +76,29 @@ const Index = () => {
   const handleConfirmOrder = (customer: Customer) => {
     const total = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
     
-    // Monta a mensagem do pedido
-    let message = `🍕 *NOVO PEDIDO - Norte Pizza Mania*\n\n`;
-    message += `👤 *Cliente:* ${customer.name}\n`;
-    message += `📱 *WhatsApp:* ${customer.phone}\n`;
-    message += `📍 *Endereço:* ${customer.address}\n\n`;
-    message += `🍕 *Pizzas:*\n`;
+    // Monta a mensagem do pedido de forma mais limpa
+    let message = `🍕 NOVO PEDIDO - Norte Pizza Mania\n\n`;
+    message += `👤 Cliente: ${customer.name}\n`;
+    message += `📱 WhatsApp: ${customer.phone}\n`;
+    message += `📍 Endereço: ${customer.address}\n\n`;
+    message += `🍕 Pizzas:\n`;
     
     cartItems.forEach((item, index) => {
       message += `${index + 1}. ${item.pizza.name}\n`;
-      message += `   Tamanho: ${item.size}\n`;
-      message += `   Quantidade: ${item.quantity}\n`;
-      message += `   Valor: R$ ${(item.price * item.quantity).toFixed(2)}\n\n`;
+      message += `   - Tamanho: ${item.size}\n`;
+      message += `   - Quantidade: ${item.quantity}\n`;
+      message += `   - Valor: R$ ${(item.price * item.quantity).toFixed(2).replace('.', ',')}\n\n`;
     });
     
-    message += `💰 *Total: R$ ${total.toFixed(2)}*\n`;
-    message += `💳 *Pagamento: PIX*\n\n`;
+    message += `💰 Total: R$ ${total.toFixed(2).replace('.', ',')}\n`;
+    message += `💳 Pagamento: PIX\n\n`;
     message += `Aguardando confirmação! 😊`;
 
-    // Codifica a mensagem para URL
+    // Codifica a mensagem para URL de forma mais simples
     const encodedMessage = encodeURIComponent(message);
     
-    // Define o número do WhatsApp da pizzaria (substitua pelo número real)
-    const whatsappNumber = '5585999999999'; // Exemplo: código do país + DDD + número
+    // Define o número do WhatsApp da pizzaria
+    const whatsappNumber = '5585999999999';
     
     // Abre WhatsApp
     const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
