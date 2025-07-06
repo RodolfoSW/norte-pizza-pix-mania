@@ -6,7 +6,7 @@ export const pizzas: Pizza[] = [
     id: '1',
     name: 'Pizza de Tucumã',
     description: 'Massa artesanal, molho especial, queijo muçarela, tucumã desfiado e cebola roxa',
-    image: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=400&h=300&fit=crop',
+    image: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400&h=300&fit=crop&crop=center',
     prices: {
       P: 28.00,
       M: 38.00,
