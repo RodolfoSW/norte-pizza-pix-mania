@@ -1,0 +1,36 @@
+
+import { CartItem, Customer } from '../types/pizza';
+
+export const formatWhatsAppMessage = (cartItems: CartItem[], customer: Customer): string => {
+  const total = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  
+  let message = `NOVO PEDIDO - Norte Pizza Mania\n\n`;
+  message += `Cliente: ${customer.name}\n`;
+  message += `Telefone: ${customer.phone}\n`;
+  message += `Endereco: ${customer.address}\n\n`;
+  message += `Pizzas:\n`;
+  
+  cartItems.forEach((item, index) => {
+    message += `${index + 1}. ${item.pizza.name}\n`;
+    message += `   Tamanho: ${item.size}\n`;
+    message += `   Quantidade: ${item.quantity}\n`;
+    message += `   Valor: R$ ${(item.price * item.quantity).toFixed(2).replace('.', ',')}\n\n`;
+  });
+  
+  message += `Total: R$ ${total.toFixed(2).replace('.', ',')}\n`;
+  message += `Pagamento: PIX\n\n`;
+  message += `Aguardando confirmacao!`;
+
+  return message;
+};
+
+export const formatWhatsAppNumber = (phone: string): string => {
+  const customerPhoneNumbers = phone.replace(/\D/g, '');
+  return `55${customerPhoneNumbers}`;
+};
+
+export const createWhatsAppUrl = (phone: string, message: string): string => {
+  const encodedMessage = encodeURIComponent(message);
+  const whatsappNumber = formatWhatsAppNumber(phone);
+  return `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
+};
