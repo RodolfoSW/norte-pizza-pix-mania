@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { CartItem, Customer } from '../types/pizza';
 import { useToast } from '@/hooks/use-toast';
 
@@ -21,7 +22,8 @@ const CheckoutModal = ({ isOpen, onClose, items, onConfirmOrder }: CheckoutModal
   const [customer, setCustomer] = useState<Customer>({
     name: '',
     phone: '',
-    address: ''
+    address: '',
+    deliveryType: 'delivery'
   });
 
   const total = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
@@ -29,10 +31,12 @@ const CheckoutModal = ({ isOpen, onClose, items, onConfirmOrder }: CheckoutModal
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!customer.name || !customer.phone || !customer.address) {
+    if (!customer.name || !customer.phone || (customer.deliveryType === 'delivery' && !customer.address)) {
       toast({
         title: "Dados incompletos",
-        description: "Por favor, preencha todos os campos.",
+        description: customer.deliveryType === 'delivery' 
+          ? "Por favor, preencha todos os campos obrigatórios." 
+          : "Por favor, preencha nome e telefone.",
         variant: "destructive"
       });
       return;
@@ -125,14 +129,40 @@ const CheckoutModal = ({ isOpen, onClose, items, onConfirmOrder }: CheckoutModal
               </div>
 
               <div>
-                <Label htmlFor="address">Endereço Completo *</Label>
+                <Label>Tipo de Entrega *</Label>
+                <RadioGroup
+                  value={customer.deliveryType}
+                  onValueChange={(value: 'delivery' | 'pickup') => 
+                    setCustomer({...customer, deliveryType: value})
+                  }
+                  className="flex gap-6 mt-2"
+                >
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="delivery" id="delivery" />
+                    <Label htmlFor="delivery">Entrega em casa</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="pickup" id="pickup" />
+                    <Label htmlFor="pickup">Retirar no estabelecimento</Label>
+                  </div>
+                </RadioGroup>
+              </div>
+
+              <div>
+                <Label htmlFor="address">
+                  {customer.deliveryType === 'delivery' ? 'Endereço Completo *' : 'Observações (opcional)'}
+                </Label>
                 <Textarea
                   id="address"
                   value={customer.address}
                   onChange={(e) => setCustomer({...customer, address: e.target.value})}
-                  placeholder="Rua, número, bairro, cidade..."
+                  placeholder={
+                    customer.deliveryType === 'delivery' 
+                      ? "Rua, número, bairro, cidade..." 
+                      : "Observações sobre a retirada..."
+                  }
                   rows={3}
-                  required
+                  required={customer.deliveryType === 'delivery'}
                 />
               </div>
 

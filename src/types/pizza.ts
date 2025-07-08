@@ -25,6 +25,7 @@ export interface Customer {
   name: string;
   phone: string;
   address: string;
+  deliveryType: 'delivery' | 'pickup';
 }
 
 export type PizzaSize = 'P' | 'M' | 'G' | 'GG' | 'EX GG';

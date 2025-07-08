@@ -7,7 +7,13 @@ export const formatWhatsAppMessage = (cartItems: CartItem[], customer: Customer)
   let message = `NOVO PEDIDO - Norte Pizza Mania\n\n`;
   message += `Cliente: ${customer.name}\n`;
   message += `Telefone: ${customer.phone}\n`;
-  message += `Endereco: ${customer.address}\n\n`;
+  message += `Tipo: ${customer.deliveryType === 'delivery' ? 'Entrega' : 'Retirada'}\n`;
+  if (customer.deliveryType === 'delivery') {
+    message += `Endereco: ${customer.address}\n`;
+  } else if (customer.address) {
+    message += `Observacoes: ${customer.address}\n`;
+  }
+  message += `\n`;
   message += `Pizzas:\n`;
   
   cartItems.forEach((item, index) => {
