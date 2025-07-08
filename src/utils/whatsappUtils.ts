@@ -29,8 +29,8 @@ export const formatWhatsAppNumber = (phone: string): string => {
   return `55${customerPhoneNumbers}`;
 };
 
-export const createWhatsAppUrl = (phone: string, message: string): string => {
+export const createWhatsAppUrl = (customerPhone: string, message: string): string => {
   const encodedMessage = encodeURIComponent(message);
-  const whatsappNumber = formatWhatsAppNumber(phone);
-  return `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
+  const companyPhone = "5596981121594"; // Número da empresa
+  return `https://wa.me/${companyPhone}?text=${encodedMessage}`;
 };
