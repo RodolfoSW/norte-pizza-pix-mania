@@ -27,6 +27,8 @@ const CheckoutModal = ({ isOpen, onClose, items, onConfirmOrder }: CheckoutModal
   });
 
   const total = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const deliveryFee = customer.deliveryType === 'delivery' ? 7 : 0;
+  const grandTotal = total + deliveryFee;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -87,10 +89,20 @@ const CheckoutModal = ({ isOpen, onClose, items, onConfirmOrder }: CheckoutModal
                     </p>
                   </div>
                 ))}
-                <div className="border-t pt-3">
-                  <div className="flex justify-between font-bold text-lg">
+                <div className="border-t pt-3 space-y-2">
+                  <div className="flex justify-between">
+                    <span>Subtotal:</span>
+                    <span>R$ {total.toFixed(2)}</span>
+                  </div>
+                  {customer.deliveryType === 'delivery' && (
+                    <div className="flex justify-between text-sm text-gray-600">
+                      <span>Taxa de entrega:</span>
+                      <span>R$ 7,00</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between font-bold text-lg border-t pt-2">
                     <span>Total:</span>
-                    <span className="text-green-800">R$ {total.toFixed(2)}</span>
+                    <span className="text-green-800">R$ {grandTotal.toFixed(2)}</span>
                   </div>
                   <p className="text-sm text-gray-600 mt-2">
                     💳 Pagamento: PIX

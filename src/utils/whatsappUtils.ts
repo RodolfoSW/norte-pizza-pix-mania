@@ -2,7 +2,9 @@
 import { CartItem, Customer } from '../types/pizza';
 
 export const formatWhatsAppMessage = (cartItems: CartItem[], customer: Customer): string => {
-  const total = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const deliveryFee = customer.deliveryType === 'delivery' ? 7 : 0;
+  const total = subtotal + deliveryFee;
   
   let message = `NOVO PEDIDO - Norte Pizza Mania\n\n`;
   message += `Cliente: ${customer.name}\n`;
@@ -23,6 +25,10 @@ export const formatWhatsAppMessage = (cartItems: CartItem[], customer: Customer)
     message += `   Valor: R$ ${(item.price * item.quantity).toFixed(2).replace('.', ',')}\n\n`;
   });
   
+  message += `Subtotal: R$ ${subtotal.toFixed(2).replace('.', ',')}\n`;
+  if (customer.deliveryType === 'delivery') {
+    message += `Taxa de entrega: R$ 7,00\n`;
+  }
   message += `Total: R$ ${total.toFixed(2).replace('.', ',')}\n`;
   message += `Pagamento: PIX\n\n`;
   message += `Aguardando confirmacao!`;
