@@ -33,6 +33,7 @@ const CheckoutModal = ({ isOpen, onClose, items, onConfirmOrder }: CheckoutModal
     reference: ''
   });
   const [loadingCep, setLoadingCep] = useState(false);
+  const [validCep, setValidCep] = useState(false);
 
   const total = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const deliveryFee = customer.deliveryType === 'delivery' ? 7 : 0;
@@ -42,7 +43,7 @@ const CheckoutModal = ({ isOpen, onClose, items, onConfirmOrder }: CheckoutModal
     const isDelivery = customer.deliveryType === 'delivery';
     const hasBasicInfo = customer.name && customer.phone;
     const hasValidPhone = /^\(\d{2}\)\s\d{4,5}-\d{4}$/.test(customer.phone);
-    const hasDeliveryInfo = !isDelivery || (customer.cep && customer.number);
+    const hasDeliveryInfo = !isDelivery || (customer.cep && customer.number && validCep);
     
     return hasBasicInfo && hasValidPhone && hasDeliveryInfo;
   };
@@ -115,6 +116,7 @@ const CheckoutModal = ({ isOpen, onClose, items, onConfirmOrder }: CheckoutModal
             variant: "destructive"
           });
           setCustomer(prev => ({...prev, cep: ''}));
+          setValidCep(false);
           return;
         }
         
@@ -127,11 +129,14 @@ const CheckoutModal = ({ isOpen, onClose, items, onConfirmOrder }: CheckoutModal
           address: `${data.logradouro}, ${data.bairro}, ${data.localidade}-${data.uf}`
         }));
         
+        setValidCep(true);
+        
         toast({
           title: "CEP encontrado!",
           description: "Endereço preenchido automaticamente",
         });
       } else {
+        setValidCep(false);
         toast({
           title: "CEP não encontrado",
           description: "Verifique o CEP digitado",
@@ -255,6 +260,7 @@ const CheckoutModal = ({ isOpen, onClose, items, onConfirmOrder }: CheckoutModal
                       onChange={(e) => {
                         const formatted = formatCep(e.target.value);
                         setCustomer({...customer, cep: formatted});
+                        setValidCep(false); // Reset validation when user types
                         if (formatted.length === 9) {
                           searchCep(formatted);
                         }
