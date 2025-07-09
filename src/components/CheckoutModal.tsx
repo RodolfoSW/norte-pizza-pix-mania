@@ -53,6 +53,15 @@ const CheckoutModal = ({ isOpen, onClose, items, onConfirmOrder }: CheckoutModal
       return;
     }
 
+    if (customer.deliveryType === 'delivery' && !customer.address.toLowerCase().includes('macapá') && !customer.address.toLowerCase().includes('macapa')) {
+      toast({
+        title: "Área de entrega limitada",
+        description: "Realizamos entregas apenas em Macapá-AP",
+        variant: "destructive"
+      });
+      return;
+    }
+
     onConfirmOrder(customer);
   };
 
@@ -164,18 +173,23 @@ const CheckoutModal = ({ isOpen, onClose, items, onConfirmOrder }: CheckoutModal
                 <Label htmlFor="address">
                   {customer.deliveryType === 'delivery' ? 'Endereço Completo *' : 'Observações (opcional)'}
                 </Label>
-                <Textarea
-                  id="address"
-                  value={customer.address}
-                  onChange={(e) => setCustomer({...customer, address: e.target.value})}
-                  placeholder={
-                    customer.deliveryType === 'delivery' 
-                      ? "Rua, número, bairro, cidade..." 
-                      : "Observações sobre a retirada..."
-                  }
-                  rows={3}
-                  required={customer.deliveryType === 'delivery'}
-                />
+                 <Textarea
+                   id="address"
+                   value={customer.address}
+                   onChange={(e) => setCustomer({...customer, address: e.target.value})}
+                   placeholder={
+                     customer.deliveryType === 'delivery' 
+                       ? "Rua, número, bairro, Macapá-AP..." 
+                       : "Observações sobre a retirada..."
+                   }
+                   rows={3}
+                   required={customer.deliveryType === 'delivery'}
+                 />
+                 {customer.deliveryType === 'delivery' && (
+                   <p className="text-xs text-amber-600 mt-1">
+                     ⚠️ Entregas disponíveis apenas em Macapá-AP
+                   </p>
+                 )}
               </div>
 
               <div className="bg-green-50 p-4 rounded-lg">
