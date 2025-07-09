@@ -101,10 +101,11 @@ const CheckoutModal = ({ isOpen, onClose, items, onConfirmOrder }: CheckoutModal
       if (!data.erro) {
         if (data.localidade.toLowerCase() !== 'macapá' || data.uf !== 'AP') {
           toast({
-            title: "Área de entrega limitada",
-            description: "Realizamos entregas apenas em Macapá-AP",
+            title: "CEP não permitido",
+            description: "Este CEP não é de Macapá-AP. Realizamos entregas apenas em Macapá.",
             variant: "destructive"
           });
+          setCustomer(prev => ({...prev, cep: ''}));
           return;
         }
         
