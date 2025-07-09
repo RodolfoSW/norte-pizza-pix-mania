@@ -26,6 +26,13 @@ export interface Customer {
   phone: string;
   address: string;
   deliveryType: 'delivery' | 'pickup';
+  cep?: string;
+  street?: string;
+  neighborhood?: string;
+  city?: string;
+  state?: string;
+  number?: string;
+  reference?: string;
 }
 
 export type PizzaSize = 'P' | 'M' | 'G' | 'GG' | 'EX GG';

@@ -8,12 +8,22 @@ export const formatWhatsAppMessage = (cartItems: CartItem[], customer: Customer)
   
   let message = `NOVO PEDIDO - Norte Pizza Mania\n\n`;
   message += `Cliente: ${customer.name}\n`;
-  message += `Telefone: ${customer.phone}\n`;
-  message += `Tipo: ${customer.deliveryType === 'delivery' ? 'Entrega' : 'Retirada'}\n`;
+  message += `WhatsApp: ${customer.phone}\n\n`;
+  
   if (customer.deliveryType === 'delivery') {
-    message += `Endereco: ${customer.address}\n`;
-  } else if (customer.address) {
-    message += `Observacoes: ${customer.address}\n`;
+    message += `🚚 ENTREGA A DOMICÍLIO\n`;
+    message += `CEP: ${customer.cep}\n`;
+    message += `Endereço: ${customer.street}, ${customer.number}\n`;
+    message += `Bairro: ${customer.neighborhood}\n`;
+    message += `Cidade: ${customer.city}-${customer.state}\n`;
+    if (customer.reference) {
+      message += `Referência: ${customer.reference}\n`;
+    }
+  } else {
+    message += `🏪 RETIRAR NO ESTABELECIMENTO\n`;
+    if (customer.address) {
+      message += `Observações: ${customer.address}\n`;
+    }
   }
   message += `\n`;
   message += `Pizzas:\n`;

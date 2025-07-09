@@ -23,8 +23,16 @@ const CheckoutModal = ({ isOpen, onClose, items, onConfirmOrder }: CheckoutModal
     name: '',
     phone: '',
     address: '',
-    deliveryType: 'delivery'
+    deliveryType: 'delivery',
+    cep: '',
+    street: '',
+    neighborhood: '',
+    city: '',
+    state: '',
+    number: '',
+    reference: ''
   });
+  const [loadingCep, setLoadingCep] = useState(false);
 
   const total = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const deliveryFee = customer.deliveryType === 'delivery' ? 7 : 0;
@@ -33,11 +41,15 @@ const CheckoutModal = ({ isOpen, onClose, items, onConfirmOrder }: CheckoutModal
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!customer.name || !customer.phone || (customer.deliveryType === 'delivery' && !customer.address)) {
+    const isDelivery = customer.deliveryType === 'delivery';
+    const missingFields = !customer.name || !customer.phone || 
+      (isDelivery && (!customer.cep || !customer.number));
+    
+    if (missingFields) {
       toast({
         title: "Dados incompletos",
-        description: customer.deliveryType === 'delivery' 
-          ? "Por favor, preencha todos os campos obrigatórios." 
+        description: isDelivery 
+          ? "Por favor, preencha nome, telefone, CEP e número da casa." 
           : "Por favor, preencha nome e telefone.",
         variant: "destructive"
       });
@@ -71,6 +83,60 @@ const CheckoutModal = ({ isOpen, onClose, items, onConfirmOrder }: CheckoutModal
       return numbers.replace(/(\d{2})(\d{4})(\d{4})/, '($1) $2-$3');
     }
     return numbers.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+  };
+
+  const formatCep = (value: string) => {
+    const numbers = value.replace(/\D/g, '');
+    return numbers.replace(/(\d{5})(\d{3})/, '$1-$2');
+  };
+
+  const searchCep = async (cep: string) => {
+    if (cep.length !== 9) return;
+    
+    setLoadingCep(true);
+    try {
+      const response = await fetch(`https://viacep.com.br/ws/${cep.replace('-', '')}/json/`);
+      const data = await response.json();
+      
+      if (!data.erro) {
+        if (data.localidade.toLowerCase() !== 'macapá' || data.uf !== 'AP') {
+          toast({
+            title: "Área de entrega limitada",
+            description: "Realizamos entregas apenas em Macapá-AP",
+            variant: "destructive"
+          });
+          return;
+        }
+        
+        setCustomer(prev => ({
+          ...prev,
+          street: data.logradouro,
+          neighborhood: data.bairro,
+          city: data.localidade,
+          state: data.uf,
+          address: `${data.logradouro}, ${data.bairro}, ${data.localidade}-${data.uf}`
+        }));
+        
+        toast({
+          title: "CEP encontrado!",
+          description: "Endereço preenchido automaticamente",
+        });
+      } else {
+        toast({
+          title: "CEP não encontrado",
+          description: "Verifique o CEP digitado",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Erro ao buscar CEP",
+        description: "Tente novamente",
+        variant: "destructive"
+      });
+    } finally {
+      setLoadingCep(false);
+    }
   };
 
   return (
@@ -169,28 +235,95 @@ const CheckoutModal = ({ isOpen, onClose, items, onConfirmOrder }: CheckoutModal
                 </RadioGroup>
               </div>
 
-              <div>
-                <Label htmlFor="address">
-                  {customer.deliveryType === 'delivery' ? 'Endereço Completo *' : 'Observações (opcional)'}
-                </Label>
-                 <Textarea
-                   id="address"
-                   value={customer.address}
-                   onChange={(e) => setCustomer({...customer, address: e.target.value})}
-                   placeholder={
-                     customer.deliveryType === 'delivery' 
-                       ? "Rua, número, bairro, Macapá-AP..." 
-                       : "Observações sobre a retirada..."
-                   }
-                   rows={3}
-                   required={customer.deliveryType === 'delivery'}
-                 />
-                 {customer.deliveryType === 'delivery' && (
-                   <p className="text-xs text-amber-600 mt-1">
-                     ⚠️ Entregas disponíveis apenas em Macapá-AP
-                   </p>
-                 )}
-              </div>
+              {customer.deliveryType === 'delivery' ? (
+                <>
+                  <div>
+                    <Label htmlFor="cep">CEP *</Label>
+                    <Input
+                      id="cep"
+                      value={customer.cep || ''}
+                      onChange={(e) => {
+                        const formatted = formatCep(e.target.value);
+                        setCustomer({...customer, cep: formatted});
+                        if (formatted.length === 9) {
+                          searchCep(formatted);
+                        }
+                      }}
+                      placeholder="00000-000"
+                      maxLength={9}
+                      required
+                      disabled={loadingCep}
+                    />
+                    {loadingCep && (
+                      <p className="text-xs text-blue-600 mt-1">
+                        🔍 Buscando endereço...
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label htmlFor="street">Rua</Label>
+                      <Input
+                        id="street"
+                        value={customer.street || ''}
+                        onChange={(e) => setCustomer({...customer, street: e.target.value})}
+                        placeholder="Nome da rua"
+                        readOnly
+                        className="bg-gray-50"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="neighborhood">Bairro</Label>
+                      <Input
+                        id="neighborhood"
+                        value={customer.neighborhood || ''}
+                        onChange={(e) => setCustomer({...customer, neighborhood: e.target.value})}
+                        placeholder="Nome do bairro"
+                        readOnly
+                        className="bg-gray-50"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label htmlFor="number">Número da Casa *</Label>
+                      <Input
+                        id="number"
+                        value={customer.number || ''}
+                        onChange={(e) => setCustomer({...customer, number: e.target.value})}
+                        placeholder="123"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="reference">Ponto de Referência</Label>
+                      <Input
+                        id="reference"
+                        value={customer.reference || ''}
+                        onChange={(e) => setCustomer({...customer, reference: e.target.value})}
+                        placeholder="Próximo ao..."
+                      />
+                    </div>
+                  </div>
+
+                  <p className="text-xs text-amber-600">
+                    ⚠️ Entregas disponíveis apenas em Macapá-AP
+                  </p>
+                </>
+              ) : (
+                <div>
+                  <Label htmlFor="address">Observações (opcional)</Label>
+                  <Textarea
+                    id="address"
+                    value={customer.address}
+                    onChange={(e) => setCustomer({...customer, address: e.target.value})}
+                    placeholder="Observações sobre a retirada..."
+                    rows={3}
+                  />
+                </div>
+              )}
 
               <div className="bg-green-50 p-4 rounded-lg">
                 <h4 className="font-semibold text-green-800 mb-2">Como funciona:</h4>
