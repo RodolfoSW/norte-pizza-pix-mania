@@ -38,6 +38,15 @@ const CheckoutModal = ({ isOpen, onClose, items, onConfirmOrder }: CheckoutModal
   const deliveryFee = customer.deliveryType === 'delivery' ? 7 : 0;
   const grandTotal = total + deliveryFee;
 
+  const isFormValid = () => {
+    const isDelivery = customer.deliveryType === 'delivery';
+    const hasBasicInfo = customer.name && customer.phone;
+    const hasValidPhone = /^\(\d{2}\)\s\d{4,5}-\d{4}$/.test(customer.phone);
+    const hasDeliveryInfo = !isDelivery || (customer.cep && customer.number);
+    
+    return hasBasicInfo && hasValidPhone && hasDeliveryInfo;
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -340,6 +349,7 @@ const CheckoutModal = ({ isOpen, onClose, items, onConfirmOrder }: CheckoutModal
                 type="submit" 
                 className="w-full pizza-gradient hover:opacity-90"
                 size="lg"
+                disabled={!isFormValid()}
               >
                 Enviar Pedido via WhatsApp
               </Button>
