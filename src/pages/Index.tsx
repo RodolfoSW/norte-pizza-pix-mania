@@ -66,7 +66,7 @@ const Index = () => {
         isOpen={isCheckoutModalOpen}
         onClose={closeCheckoutModal}
         items={cartItems}
-        onConfirmOrder={handleConfirmOrder}
+        clearCart={clearCart}
       />
 
       {/* Footer */}

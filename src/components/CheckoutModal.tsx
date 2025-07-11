@@ -9,15 +9,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { CartItem, Customer } from '../types/pizza';
 import { useToast } from '@/hooks/use-toast';
+import { formatWhatsAppMessage, formatWhatsAppNumber, createWhatsAppUrl } from '../utils/whatsappUtils';
 
 interface CheckoutModalProps {
   isOpen: boolean;
   onClose: () => void;
   items: CartItem[];
-  onConfirmOrder: (customer: Customer) => void;
+  clearCart: () => void;
 }
 
-const CheckoutModal = ({ isOpen, onClose, items, onConfirmOrder }: CheckoutModalProps) => {
+const CheckoutModal = ({ isOpen, onClose, items, clearCart }: CheckoutModalProps) => {
   const { toast } = useToast();
   const [customer, setCustomer] = useState<Customer>({
     name: '',
@@ -30,7 +31,8 @@ const CheckoutModal = ({ isOpen, onClose, items, onConfirmOrder }: CheckoutModal
     city: '',
     state: '',
     number: '',
-    reference: ''
+    reference: '',
+    paymentMethod: 'pix'
   });
   const [loadingCep, setLoadingCep] = useState(false);
   const [validCep, setValidCep] = useState(false);
@@ -51,40 +53,51 @@ const CheckoutModal = ({ isOpen, onClose, items, onConfirmOrder }: CheckoutModal
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    const isDelivery = customer.deliveryType === 'delivery';
-    const missingFields = !customer.name || !customer.phone || 
-      (isDelivery && (!customer.cep || !customer.number));
+    if (!isFormValid()) return;
+
+    // Criar objeto do pedido para salvar
+    const order = {
+      id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+      customer: {
+        name: customer.name,
+        phone: customer.phone,
+        deliveryType: customer.deliveryType,
+        cep: customer.cep,
+        address: customer.address,
+        number: customer.number,
+        complement: customer.reference,
+        reference: customer.reference
+      },
+      items: items.map(item => ({
+        name: item.pizza.name,
+        size: item.size,
+        price: item.price,
+        quantity: item.quantity
+      })),
+      paymentMethod: customer.paymentMethod || 'pix',
+      total: grandTotal,
+      status: 'pending' as const,
+      createdAt: new Date().toISOString()
+    };
+
+    // Salvar pedido no localStorage
+    const existingOrders = JSON.parse(localStorage.getItem('pizzaOrders') || '[]');
+    existingOrders.push(order);
+    localStorage.setItem('pizzaOrders', JSON.stringify(existingOrders));
+
+    const formattedPhone = formatWhatsAppNumber(customer.phone);
+    const message = formatWhatsAppMessage(items, customer);
+    const whatsappUrl = createWhatsAppUrl(formattedPhone, message);
     
-    if (missingFields) {
-      toast({
-        title: "Dados incompletos",
-        description: isDelivery 
-          ? "Por favor, preencha nome, telefone, CEP e número da casa." 
-          : "Por favor, preencha nome e telefone.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (!/^\(\d{2}\)\s\d{4,5}-\d{4}$/.test(customer.phone)) {
-      toast({
-        title: "Telefone inválido",
-        description: "Use o formato (85) 99999-9999",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (customer.deliveryType === 'delivery' && !customer.address.toLowerCase().includes('macapá') && !customer.address.toLowerCase().includes('macapa')) {
-      toast({
-        title: "Área de entrega limitada",
-        description: "Realizamos entregas apenas em Macapá-AP",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    onConfirmOrder(customer);
+    window.open(whatsappUrl, '_blank');
+    
+    onClose();
+    clearCart();
+    
+    toast({
+      title: "Pedido enviado!",
+      description: "Seu pedido foi enviado via WhatsApp. Aguarde a confirmação!",
+    });
   };
 
   const formatPhone = (value: string) => {
@@ -194,9 +207,29 @@ const CheckoutModal = ({ isOpen, onClose, items, onConfirmOrder }: CheckoutModal
                     <span>Total:</span>
                     <span className="text-green-800">R$ {grandTotal.toFixed(2)}</span>
                   </div>
-                  <p className="text-sm text-gray-600 mt-2">
-                    💳 Pagamento: PIX
-                  </p>
+                  <div className="mt-3">
+                    <Label>Método de Pagamento</Label>
+                    <RadioGroup
+                      value={customer.paymentMethod}
+                      onValueChange={(value: 'pix' | 'money' | 'card') => 
+                        setCustomer({...customer, paymentMethod: value})
+                      }
+                      className="flex gap-4 mt-2"
+                    >
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="pix" id="pix" />
+                        <Label htmlFor="pix">PIX</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="money" id="money" />
+                        <Label htmlFor="money">Dinheiro</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="card" id="card" />
+                        <Label htmlFor="card">Cartão</Label>
+                      </div>
+                    </RadioGroup>
+                  </div>
                 </div>
               </CardContent>
             </Card>

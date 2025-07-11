@@ -33,6 +33,7 @@ export interface Customer {
   state?: string;
   number?: string;
   reference?: string;
+  paymentMethod?: 'pix' | 'money' | 'card';
 }
 
 export type PizzaSize = 'P' | 'M' | 'G' | 'GG' | 'EX GG';
