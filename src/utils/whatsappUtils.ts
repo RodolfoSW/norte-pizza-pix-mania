@@ -40,7 +40,29 @@ export const formatWhatsAppMessage = (cartItems: CartItem[], customer: Customer)
     message += `Taxa de entrega: R$ 7,00\n`;
   }
   message += `Total: R$ ${total.toFixed(2).replace('.', ',')}\n`;
-  message += `Pagamento: PIX\n\n`;
+  
+  // Método de pagamento
+  let paymentText = '';
+  switch (customer.paymentMethod) {
+    case 'pix':
+      paymentText = 'PIX';
+      break;
+    case 'money':
+      paymentText = 'Dinheiro';
+      if (customer.needsChange && customer.changeAmount) {
+        paymentText += ` - Precisa de troco para R$ ${customer.changeAmount.toFixed(2).replace('.', ',')}`;
+      } else if (customer.needsChange === false) {
+        paymentText += ' - Não precisa de troco';
+      }
+      break;
+    case 'card':
+      paymentText = 'Cartão';
+      break;
+    default:
+      paymentText = 'PIX';
+  }
+  
+  message += `Pagamento: ${paymentText}\n\n`;
   message += `Aguardando confirmacao!`;
 
   return message;

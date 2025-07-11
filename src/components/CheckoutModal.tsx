@@ -32,7 +32,9 @@ const CheckoutModal = ({ isOpen, onClose, items, clearCart }: CheckoutModalProps
     state: '',
     number: '',
     reference: '',
-    paymentMethod: 'pix'
+    paymentMethod: 'pix',
+    needsChange: false,
+    changeAmount: undefined
   });
   const [loadingCep, setLoadingCep] = useState(false);
   const [validCep, setValidCep] = useState(false);
@@ -212,7 +214,7 @@ const CheckoutModal = ({ isOpen, onClose, items, clearCart }: CheckoutModalProps
                     <RadioGroup
                       value={customer.paymentMethod}
                       onValueChange={(value: 'pix' | 'money' | 'card') => 
-                        setCustomer({...customer, paymentMethod: value})
+                        setCustomer({...customer, paymentMethod: value, needsChange: false, changeAmount: undefined})
                       }
                       className="flex gap-4 mt-2"
                     >
@@ -229,6 +231,55 @@ const CheckoutModal = ({ isOpen, onClose, items, clearCart }: CheckoutModalProps
                         <Label htmlFor="card">Cartão</Label>
                       </div>
                     </RadioGroup>
+                    
+                    {customer.paymentMethod === 'money' && (
+                      <div className="mt-4 p-3 bg-yellow-50 rounded-lg border">
+                        <Label className="text-sm font-medium">Informações sobre troco</Label>
+                        <RadioGroup
+                          value={customer.needsChange ? 'yes' : 'no'}
+                          onValueChange={(value) => {
+                            const needsChange = value === 'yes';
+                            setCustomer({
+                              ...customer, 
+                              needsChange, 
+                              changeAmount: needsChange ? customer.changeAmount : undefined
+                            });
+                          }}
+                          className="flex gap-4 mt-2"
+                        >
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="no" id="no-change" />
+                            <Label htmlFor="no-change" className="text-sm">Não preciso de troco</Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="yes" id="needs-change" />
+                            <Label htmlFor="needs-change" className="text-sm">Preciso de troco</Label>
+                          </div>
+                        </RadioGroup>
+                        
+                        {customer.needsChange && (
+                          <div className="mt-3">
+                            <Label htmlFor="changeAmount" className="text-sm">Valor para troco</Label>
+                            <Input
+                              id="changeAmount"
+                              type="number"
+                              step="0.01"
+                              min={grandTotal}
+                              value={customer.changeAmount || ''}
+                              onChange={(e) => setCustomer({
+                                ...customer, 
+                                changeAmount: parseFloat(e.target.value) || undefined
+                              })}
+                              placeholder={`Mínimo: R$ ${grandTotal.toFixed(2)}`}
+                              className="mt-1"
+                            />
+                            <p className="text-xs text-gray-600 mt-1">
+                              Informe o valor da nota que você vai pagar
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               </CardContent>

@@ -34,6 +34,8 @@ export interface Customer {
   number?: string;
   reference?: string;
   paymentMethod?: 'pix' | 'money' | 'card';
+  needsChange?: boolean;
+  changeAmount?: number;
 }
 
 export type PizzaSize = 'P' | 'M' | 'G' | 'GG' | 'EX GG';
