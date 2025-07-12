@@ -367,8 +367,9 @@ const AdminDashboard = () => {
                           <Select
                             value={order.status}
                             onValueChange={(value: Order['status']) => updateOrderStatus(order.id, value)}
+                            disabled={order.status === 'paid'}
                           >
-                            <SelectTrigger className="w-32">
+                            <SelectTrigger className={`w-32 ${order.status === 'paid' ? 'opacity-50 cursor-not-allowed' : ''}`}>
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
