@@ -17,7 +17,9 @@ import {
   Truck,
   Eye,
   Filter,
-  History
+  History,
+  Users,
+  Trophy
 } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -48,6 +50,14 @@ interface Order {
   createdAt: string;
 }
 
+interface CustomerStats {
+  phone: string;
+  name: string;
+  totalOrders: number;
+  totalSpent: number;
+  lastOrder: string;
+}
+
 const AdminDashboard = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [filteredOrders, setFilteredOrders] = useState<Order[]>([]);
@@ -55,6 +65,8 @@ const AdminDashboard = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [historySearch, setHistorySearch] = useState('');
+  const [customerStats, setCustomerStats] = useState<CustomerStats[]>([]);
+  const [customerSearch, setCustomerSearch] = useState('');
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -66,12 +78,14 @@ const AdminDashboard = () => {
     }
 
     loadOrders();
+    loadCustomerStats();
   }, [navigate]);
 
   useEffect(() => {
     filterOrders();
     filterHistoryOrders();
-  }, [orders, searchTerm, statusFilter, historySearch]);
+    filterCustomerStats();
+  }, [orders, searchTerm, statusFilter, historySearch, customerStats, customerSearch]);
 
   const loadOrders = () => {
     const savedOrders = localStorage.getItem('pizzaOrders');
@@ -139,6 +153,56 @@ const AdminDashboard = () => {
 
     setHistoryOrders(historyFiltered);
   };
+
+  const loadCustomerStats = () => {
+    const savedOrders = localStorage.getItem('pizzaOrders');
+    if (!savedOrders) return;
+
+    const parsedOrders = JSON.parse(savedOrders);
+    const customerMap = new Map<string, CustomerStats>();
+
+    // Processar todos os pedidos para criar estatísticas dos clientes
+    parsedOrders.forEach((order: Order) => {
+      const phone = order.customer.phone;
+      
+      if (customerMap.has(phone)) {
+        const existing = customerMap.get(phone)!;
+        existing.totalOrders += 1;
+        existing.totalSpent += order.total;
+        
+        // Atualizar último pedido se for mais recente
+        if (new Date(order.createdAt) > new Date(existing.lastOrder)) {
+          existing.lastOrder = order.createdAt;
+          existing.name = order.customer.name; // Atualizar nome mais recente
+        }
+      } else {
+        customerMap.set(phone, {
+          phone,
+          name: order.customer.name,
+          totalOrders: 1,
+          totalSpent: order.total,
+          lastOrder: order.createdAt
+        });
+      }
+    });
+
+    // Converter para array e ordenar por total gasto (melhores clientes primeiro)
+    const statsArray = Array.from(customerMap.values())
+      .sort((a, b) => b.totalSpent - a.totalSpent);
+
+    setCustomerStats(statsArray);
+  };
+
+  const filterCustomerStats = () => {
+    if (!customerSearch) return customerStats;
+    
+    return customerStats.filter(customer =>
+      customer.name.toLowerCase().includes(customerSearch.toLowerCase()) ||
+      customer.phone.includes(customerSearch)
+    );
+  };
+
+  const filteredCustomerStats = filterCustomerStats();
 
   const updateOrderStatus = (orderId: string, newStatus: Order['status']) => {
     const updatedOrders = orders.map(order => 
@@ -215,11 +279,15 @@ const AdminDashboard = () => {
 
       <div className="container mx-auto px-4 py-6">
         <Tabs defaultValue="dashboard" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="history">
               <History className="w-4 h-4 mr-2" />
               Histórico
+            </TabsTrigger>
+            <TabsTrigger value="customers">
+              <Users className="w-4 h-4 mr-2" />
+              Clientes
             </TabsTrigger>
           </TabsList>
 
@@ -629,6 +697,154 @@ const AdminDashboard = () => {
                     <div className="text-center py-8 text-muted-foreground">
                       <History className="w-12 h-12 mx-auto mb-4 opacity-50" />
                       <p>Nenhum pedido pago encontrado no histórico</p>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="customers" className="space-y-6">
+            {/* Customer Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Total de Clientes</CardTitle>
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{customerStats.length}</div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Melhor Cliente</CardTitle>
+                  <Trophy className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-sm font-bold">
+                    {customerStats.length > 0 ? customerStats[0].name : 'Nenhum'}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {customerStats.length > 0 ? `R$ ${customerStats[0].totalSpent.toFixed(2)}` : ''}
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Ticket Médio</CardTitle>
+                  <DollarSign className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    R$ {customerStats.length > 0 ? 
+                      (customerStats.reduce((sum, c) => sum + c.totalSpent, 0) / 
+                       customerStats.reduce((sum, c) => sum + c.totalOrders, 0)).toFixed(2) 
+                      : '0.00'}
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Cliente Mais Fiel</CardTitle>
+                  <Package className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-sm font-bold">
+                    {customerStats.length > 0 ? 
+                      customerStats.reduce((max, c) => c.totalOrders > max.totalOrders ? c : max, customerStats[0]).name 
+                      : 'Nenhum'}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {customerStats.length > 0 ? 
+                      `${customerStats.reduce((max, c) => c.totalOrders > max.totalOrders ? c : max, customerStats[0]).totalOrders} pedidos`
+                      : ''}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Customer Search */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Buscar Clientes</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                  <Input
+                    placeholder="Buscar por nome ou telefone..."
+                    className="pl-10"
+                    value={customerSearch}
+                    onChange={(e) => setCustomerSearch(e.target.value)}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Customer Ranking Table */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Ranking de Clientes ({filteredCustomerStats.length})</CardTitle>
+                <CardDescription>
+                  Histórico completo de clientes ordenado por valor total gasto
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Posição</TableHead>
+                        <TableHead>Nome</TableHead>
+                        <TableHead>Telefone</TableHead>
+                        <TableHead>Total de Pedidos</TableHead>
+                        <TableHead>Valor Total Gasto</TableHead>
+                        <TableHead>Valor Médio por Pedido</TableHead>
+                        <TableHead>Último Pedido</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredCustomerStats.map((customer, index) => (
+                        <TableRow key={customer.phone}>
+                          <TableCell className="font-medium">
+                            <div className="flex items-center">
+                              {index === 0 && <Trophy className="w-4 h-4 mr-1 text-yellow-500" />}
+                              {index === 1 && <Trophy className="w-4 h-4 mr-1 text-gray-400" />}
+                              {index === 2 && <Trophy className="w-4 h-4 mr-1 text-orange-400" />}
+                              #{index + 1}
+                            </div>
+                          </TableCell>
+                          <TableCell className="font-medium">{customer.name}</TableCell>
+                          <TableCell>{customer.phone}</TableCell>
+                          <TableCell>
+                            <Badge variant="secondary">
+                              {customer.totalOrders} pedido{customer.totalOrders !== 1 ? 's' : ''}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="font-medium text-green-600">
+                            R$ {customer.totalSpent.toFixed(2)}
+                          </TableCell>
+                          <TableCell>
+                            R$ {(customer.totalSpent / customer.totalOrders).toFixed(2)}
+                          </TableCell>
+                          <TableCell className="text-xs">
+                            {new Date(customer.lastOrder).toLocaleDateString('pt-BR')}
+                            <br />
+                            {new Date(customer.lastOrder).toLocaleTimeString('pt-BR')}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                  
+                  {filteredCustomerStats.length === 0 && (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Users className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                      <p>Nenhum cliente encontrado</p>
                     </div>
                   )}
                 </div>
