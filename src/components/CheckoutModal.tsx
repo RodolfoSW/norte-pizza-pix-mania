@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -38,6 +38,51 @@ const CheckoutModal = ({ isOpen, onClose, items, clearCart }: CheckoutModalProps
   });
   const [loadingCep, setLoadingCep] = useState(false);
   const [validCep, setValidCep] = useState(false);
+
+  // Salvar dados do cliente no localStorage
+  const saveCustomerData = (customerData: Customer) => {
+    const existingCustomers = JSON.parse(localStorage.getItem('customerData') || '{}');
+    existingCustomers[customerData.phone] = {
+      name: customerData.name,
+      cep: customerData.cep,
+      street: customerData.street,
+      neighborhood: customerData.neighborhood,
+      city: customerData.city,
+      state: customerData.state,
+      address: customerData.address,
+      number: customerData.number,
+      reference: customerData.reference
+    };
+    localStorage.setItem('customerData', JSON.stringify(existingCustomers));
+  };
+
+  // Buscar dados do cliente pelo telefone
+  const loadCustomerData = (phone: string) => {
+    const existingCustomers = JSON.parse(localStorage.getItem('customerData') || '{}');
+    return existingCustomers[phone] || null;
+  };
+
+  // Auto-preencher quando o telefone for alterado
+  useEffect(() => {
+    if (customer.phone && /^\(\d{2}\)\s\d{4,5}-\d{4}$/.test(customer.phone)) {
+      const savedData = loadCustomerData(customer.phone);
+      if (savedData) {
+        setCustomer(prev => ({
+          ...prev,
+          ...savedData
+        }));
+        
+        if (savedData.cep) {
+          setValidCep(true);
+        }
+        
+        toast({
+          title: "Dados encontrados!",
+          description: "Informações preenchidas automaticamente",
+        });
+      }
+    }
+  }, [customer.phone, toast]);
 
   const total = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const deliveryFee = customer.deliveryType === 'delivery' ? 7 : 0;
@@ -81,6 +126,9 @@ const CheckoutModal = ({ isOpen, onClose, items, clearCart }: CheckoutModalProps
       status: 'pending' as const,
       createdAt: new Date().toISOString()
     };
+
+    // Salvar dados do cliente para uso futuro
+    saveCustomerData(customer);
 
     // Salvar pedido no localStorage
     const existingOrders = JSON.parse(localStorage.getItem('pizzaOrders') || '[]');
